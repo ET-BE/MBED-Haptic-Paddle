@@ -1,0 +1,17 @@
+.build
+.mbed
+projectfiles
+*.py*
+mbed-os
+BUILD
+
+.vscode/
+.idea/
+.vs/
+
+# MBED modules
+FastPWM/
+biquad-filter/
+hx711/
+qei/
+uscope/
