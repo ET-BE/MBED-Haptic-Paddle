@@ -8,9 +8,16 @@ The set-up consists of a lever on top of a loadcell, attached by to a DC motor b
 
 ## Usage
 
+### Interface
+
 Connect the first micro-USB port (marked `SDA USB`) to your computer to power the board and do serial communication.
 
 Also connect the second USB port (marked `K64F USB`) and use the [uScope](https://bitbucket.org/ctw-bw/uscope) (HID version) to graph data.
+
+Use the `INT1` button to go to Idle mode. Use the `RST` button (next to the USB) to reset the board.  
+When in Idle mode, hold `INT1` for about a second to go back to the regular run mode.
+
+### Parameters
 
 You can use the serial terminal to change e.g. model parameters. Do this by typing entries like:
 

@@ -22,8 +22,6 @@ int main()
 
     Control machine(Fs);
 
-    machine.setState(Control::RUN);
-
     while (true) {
 
         const std::chrono::duration<float> loop_time(1.0f / Fs);
@@ -31,7 +29,7 @@ int main()
 
         machine.run();
 
-        // Busy wait untill the looptime (including execution) has passed
+        // Busy wait until the looptime (including execution) has passed
         while (t.elapsed_time() < next) {}
     }
 }

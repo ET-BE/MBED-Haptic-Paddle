@@ -46,3 +46,7 @@ void PID::setFilter(float Fc, BiquadFilter::TYPE type) {
         _error_filter = new BiquadFilter(1.0f / _Ts, Fc, type);
     }
 }
+
+void PID::reset() {
+    _error_int = 0.0f;
+}

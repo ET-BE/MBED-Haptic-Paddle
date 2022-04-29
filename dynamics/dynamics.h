@@ -3,6 +3,8 @@
  *
  * Extend this class and override the `computeDynamics` method to
  * implement it.
+ *
+ * WARNING: Properties aren't in SI units, since the machine is small
  */
 class Dynamics {
 
@@ -30,9 +32,16 @@ public:
      */
     float getPosition() const;
 
-    float mass; ///< Virtual mass
-    float damping; ///< Virtual damping
-    float stiffness; ///< Virtual spring stiffness
+    /**
+     * Reset virtual dynmicas to specific position (also set vel. to 0)
+     *
+     * @param pos
+     */
+    void resetPosition(float pos);
+
+    float mass; ///< Virtual mass [g.m2]
+    float damping; ///< Virtual damping [mNm/rad/s]
+    float stiffness; ///< Virtual spring stiffness [mN/rad]
 
 protected:
 

@@ -16,6 +16,8 @@ Control::Control(float Fs) {
 
     offset_motor_rev_ = 0.0f;
 
+    max_pwm_ = 0.2f;
+
     // Use pointers so we don't have to use the initialiser list
     // of this class, and instead use delayed creation
 
@@ -51,9 +53,10 @@ Control::Control(float Fs) {
     // Print instructions
     printf("\nChange settings by typing: [letter]=[value]\n");
     printf("Use: (current value)\n");
-    printf("m - Mass (%.2f)\n", dynamics_->mass);
-    printf("d - Damping (%.2f)\n", dynamics_->damping);
-    printf("k - Sprinf stiffness (%.2f)\n", dynamics_->stiffness);
+    printf("m - Mass [g.m2] (%.2f)\n", dynamics_->mass);
+    printf("d - Damping [Nm/rad/s] (%.2f)\n", dynamics_->damping);
+    printf("k - Sprinf stiffness [Nm/rad] (%.2f)\n", dynamics_->stiffness);
+    printf("p - Max. motor PWM (%.2f)\n", max_pwm_);
 }
 
 // Destructor
@@ -93,20 +96,25 @@ void Control::handle_serial_input() {
                 // E.g. "m=0.5"
 
                 if (var == 'm') {
-                    if (val > 0.05f) {
+                    if (val > 0.001f) {
                         dynamics_->mass = val;
+                        printf("New mass [g.m2]: %.2f\n", val);
                     }
-                    printf("New mass: %.2f\n", val);
                 } else if (var == 'd') {
                     if (val >= 0.0f) {
                         dynamics_->damping = val;
+                        printf("New damping: %.2f\n", val);
                     }
-                    printf("New damping: %.2f\n", val);
                 } else if (var == 'k') {
                     if (val >= 0.0f) {
                         dynamics_->stiffness = val;
+                        printf("New stiffness: %.2f\n", val);
                     }
-                    printf("New stiffness: %.2f\n", val);
+                } else if (var == 'p') {
+                    if (val >= 0.0f) {
+                        max_pwm_ = val;
+                        printf("New max. PWM: %.2f\n", val);
+                    }
                 } else {
                     printf("Unknown command [%c]\n", var);
                 }
@@ -138,11 +146,6 @@ void Control::run_state() {
             state_idle();
             break;
     }
-
-    // Button is pulled up
-    if (!button_stop_->read()) {
-        setState(IDLE);
-    }
 }
 
 // Run before each state
@@ -165,7 +168,8 @@ void Control::state_all() {
     old_pos = pos_;
 
     if (loadcell_->isReady()) {
-        torque_ = loadcell_->getUnits();
+        torque_ = -1.0f * loadcell_->getUnits();
+        // Flip sign so it matches the direction of the encoder
     }
     if (use_torque_filter) {
         torque_ = filter_torque.sample(torque_);
@@ -227,24 +231,42 @@ void Control::state_calibrate() {
 
 void Control::state_run() {
 
+    static bool idle_button_pressed;
+
     if (isInit()) {
         printf("New state: RUN\n");
 
+        // Reset dynamics to match with the physical setup
+        dynamics_->resetPosition(pos_);
+
         motor_->set(0.0f);
+
+        pid_->reset();
+
+        idle_button_pressed = true;
     }
     
     dynamics_->update(torque_);
 
     float target = dynamics_->getPosition();
 
+    // Limit position
+    if (target < -2.0f) {
+        dynamics_->resetPosition(-2.0f);
+    } else if (target > 2.0f) {
+        dynamics_->resetPosition(2.0f);
+    }
+
     //float t = (float)getStateTime() / 1000.0f;
     //float target = 0.5f * sinf(0.3f * t * 2.0f * M_PI);
 
     float pwm = pid_->control(target - pos_);
-    if (pwm > 0.5f) {
-        pwm = 0.5f;
-    } else if (pwm < -0.5f) {
-        pwm = -0.5f;
+
+    // Limit PWM
+    if (pwm > max_pwm_) {
+        pwm = max_pwm_;
+    } else if (pwm < -max_pwm_) {
+        pwm = -max_pwm_;
     }
     motor_->set(pwm);
 
@@ -253,15 +275,42 @@ void Control::state_run() {
     scope_->set(2, pwm);
     scope_->set(3, torque_);
     scope_->send();
+
+    // Go to idle
+    if (!button_stop_->read()) { // Button is pulled up
+        if (idle_button_pressed == false) {
+            setState(IDLE);
+        }
+        idle_button_pressed = true;
+    } else {
+        idle_button_pressed = false;
+    }
 }
 
 // ------------- IDLE -------------
 
 void Control::state_idle() {
 
+    static unsigned int run_button_count;
+
     if (isInit()) {
         printf("New state: IDLE\n");
+
+        run_button_count = 0;
     }
 
     motor_->set(0.0f);
+
+    // Go back to run mode
+    if (!button_stop_->read()) {
+        run_button_count++;
+    } else {
+        if (run_button_count > 0) {
+            run_button_count--;
+        }
+    }
+
+    if (run_button_count > 500) {
+        setState(RUN);
+    }
 }

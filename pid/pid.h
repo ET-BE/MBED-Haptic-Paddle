@@ -39,6 +39,9 @@ public:
      */
     void setFilter(float Fc, BiquadFilter::TYPE type = BiquadFilter::TYPE_LOW_PASS);
 
+    /** Reset any persistent values */
+    void reset();
+
 private:
 
     float _k_p, _k_d, _k_i; ///< Gains

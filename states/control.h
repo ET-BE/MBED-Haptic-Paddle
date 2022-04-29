@@ -76,6 +76,8 @@ private:
     Motor* motor_;
     HX711* loadcell_;
 
+    float max_pwm_; ///< Variable PWM limit - The motor is quite powerful
+
     PID* pid_; ///< Motor position controller
 
     HIDScope* scope_;
