@@ -1,5 +1,8 @@
 /**
  * Template class for dynamics implementation.
+ *
+ * Extend this class and override the `computeDynamics` method to
+ * implement it.
  */
 class Dynamics {
 
@@ -27,6 +30,10 @@ public:
      */
     float getPosition() const;
 
+    float mass; ///< Virtual mass
+    float damping; ///< Virtual damping
+    float stiffness; ///< Virtual spring stiffness
+
 protected:
 
     /**
@@ -38,9 +45,6 @@ protected:
     virtual float computeDynamics(float input_torque);
 
     float dt_; ///< Sample time
-
-    float mass_; ///< Virtual mass
-    float damping_; ///< Virtual damping
 
     float q_, dq_, ddq_; ///< Virtual states
 

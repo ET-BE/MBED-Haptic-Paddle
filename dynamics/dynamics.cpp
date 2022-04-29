@@ -3,8 +3,9 @@
 Dynamics::Dynamics(float Fs) {
     dt_ = 1.0f / Fs;
 
-    mass_ = 1.0f;
-    damping_ = 1.0f;
+    mass = 1.0f;
+    damping = 1.0f;
+    stiffness = 0.0f; // Disabled
 
     q_ = dq_ = ddq_ = 0.0f;
 }
@@ -21,7 +22,7 @@ void Dynamics::update(float input_torque) {
 float Dynamics::computeDynamics(float input_torque) {
 
     // Mass-damper system
-    return (input_torque - damping_ * dq_) / mass_;
+    return (input_torque - stiffness * q_ - damping * dq_) / mass;
 }
 
 float Dynamics::getPosition() const {

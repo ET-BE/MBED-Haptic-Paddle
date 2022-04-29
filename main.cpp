@@ -5,6 +5,15 @@ const float Fs = 500.0f; // Hz
 
 Timer t;
 
+/**
+ * Implement default method to point to local console instance.
+ *
+ * This is needed to combine e.g. `serial.read` and `printf`.
+ */
+FileHandle *mbed::mbed_override_console(int) {
+    return &Control::console;
+}
+
 int main()
 {
     printf("Getting started\n");

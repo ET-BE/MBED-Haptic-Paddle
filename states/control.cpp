@@ -4,6 +4,8 @@
 
 #include "control.h"
 
+BufferedSerial Control::console(STDIO_UART_TX, STDIO_UART_RX, 115200);
+
 // Constructor
 Control::Control(float Fs) {
 
@@ -29,18 +31,27 @@ Control::Control(float Fs) {
     pid_->setFilter(50.0f);
 
     dynamics_ = new Dynamics(Fs_);
+    // At any time dynamics_ could be deleted and replaced a subclass
 
     printf("Connecting to uScope...\n");
     ThisThread::sleep_for(1ms); // Let print come through
 
-    scope_ = new HIDScope(3);
+    scope_ = new HIDScope(4);
 
     printf("Connected\n");
 
     printf("Taring loadcell...\n");
-    loadcell_->setScale(0.0001f);
+    loadcell_->setScale((8388608.0f * 128.0f) / (5.0f * 850.0f));
+    // TODO: Do some rough calibration on the sensor
     loadcell_->powerUp();
     loadcell_->tare();
+
+    // Print instructions
+    printf("\nChange settings by typing: [letter]=[value]\n");
+    printf("Use: (current value)\n");
+    printf("m - Mass (%.2f)\n", dynamics_->mass);
+    printf("d - Damping (%.2f)\n", dynamics_->damping);
+    printf("k - Sprinf stiffness (%.2f)\n", dynamics_->stiffness);
 }
 
 // Destructor
@@ -55,6 +66,58 @@ Control::~Control() {
 
 bool Control::blink(int dt) const {
     return getStateTime() % (2*dt) > dt;
+}
+
+void Control::handle_serial_input() {
+
+    static char c;
+    static char input_buffer[32];
+    static unsigned int input_i = 0;
+
+    while (console.readable()) {
+        console.read(&c, 1);
+        
+        // If buffer is maxed out or [Enter] was pressed
+        if (input_i >= 32 || c == 13) {
+
+            printf("\n");
+            if (input_i > 1) {
+
+                input_buffer[input_i] = '\0'; // Insert null terminator
+
+                char var, sep;
+                float val;
+                sscanf(input_buffer, "%c%c%f", &var, &sep, &val);
+                // E.g. "m=0.5"
+
+                if (var == 'm') {
+                    if (val > 0.05f) {
+                        dynamics_->mass = val;
+                    }
+                    printf("New mass: %.2f\n", val);
+                } else if (var == 'd') {
+                    if (val >= 0.0f) {
+                        dynamics_->damping = val;
+                    }
+                    printf("New damping: %.2f\n", val);
+                } else if (var == 'k') {
+                    if (val >= 0.0f) {
+                        dynamics_->stiffness = val;
+                    }
+                    printf("New stiffness: %.2f\n", val);
+                } else {
+                    printf("Unknown command [%c]\n", var);
+                }
+            }
+
+            input_i = 0;
+            break;
+        } else {
+            console.write(&c, 1); // Echo back
+        }
+
+        input_buffer[input_i++] = c;
+    }
 }
 
 // State selection
@@ -106,10 +169,8 @@ void Control::state_all() {
         torque_ = filter_torque.sample(torque_);
     }
 
-    // scope_->set(0, pos_);
-    // scope_->set(1, vel_);
-    // scope_->set(2, torque_);
-    // scope_->send();
+    // Listen for serial input
+    handle_serial_input();
 }
 
 // ------------- CALIBRATE -------------
@@ -172,8 +233,10 @@ void Control::state_run() {
     
     dynamics_->update(torque_);
 
-    float t = (float)getStateTime() / 1000.0f;
-    float target = 0.5f * sinf(0.3f * t * 2.0f * M_PI);
+    float target = dynamics_->getPosition();
+
+    //float t = (float)getStateTime() / 1000.0f;
+    //float target = 0.5f * sinf(0.3f * t * 2.0f * M_PI);
 
     float pwm = pid_->control(target - pos_);
     if (pwm > 0.5f) {
@@ -186,6 +249,7 @@ void Control::state_run() {
     scope_->set(0, target);
     scope_->set(1, pos_);
     scope_->set(2, pwm);
+    scope_->set(3, torque_);
     scope_->send();
 }
 

@@ -39,12 +39,26 @@ public:
      */
     void run_state() override;
 
+    /**
+     * Global serial instance.
+     *
+     * mbed_app.json is also configured to use this.
+     * 
+     * @see mbed_override_console
+     */
+    static BufferedSerial console;
+
 private:
 
     void state_all();
     void state_calibrate();
     void state_run();
     void state_idle();
+
+    /**
+     * Read the current buffer and process the textual input
+     */
+    void handle_serial_input();
 
     /**
      * Return alternating true and false, based on state time

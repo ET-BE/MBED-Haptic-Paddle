@@ -10,6 +10,16 @@ The set-up consists of a lever on top of a loadcell, attached by to a DC motor b
 
 Connect the first micro-USB port (marked `SDA USB`) to your computer to power the board and do serial communication.
 
+Also connect the second USB port (marked `K64F USB`) and use the [uScope](https://bitbucket.org/ctw-bw/uscope) (HID version) to graph data.
+
+You can use the serial terminal to change e.g. model parameters. Do this by typing entries like:
+
+```
+m=3.5
+```
+
+Read the serial start-up prompt for a list of parameters.
+
 ## Hardware
 
  * [MBED K64F microcontroller](https://os.mbed.com/platforms/FRDM-K64F/)
