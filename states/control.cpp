@@ -41,8 +41,10 @@ Control::Control(float Fs) {
     printf("Connected\n");
 
     printf("Taring loadcell...\n");
-    loadcell_->setScale((8388608.0f * 128.0f) / (5.0f * 850.0f));
-    // TODO: Do some rough calibration on the sensor
+    // Scale = sensor counts (int) per Nm
+    // (int rangesensor * amplifier gain) / (Vcc * sensitivity)
+    // The sensitivy was roughly calibrated
+    loadcell_->setScale((8388608.0f * 128.0f) / (5.0f * 31.0f));
     loadcell_->powerUp();
     loadcell_->tare();
 

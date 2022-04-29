@@ -32,6 +32,11 @@ On the HX711 development kit, the RATE pad on the bottom was broken, to increase
 
 The exact type of the Maxon motor is not known. It can be used with a 9V or 12V supply.
 
+## Calibration
+
+The HX711 plus strain sensor were roughly calibrated by hanging a known weight from the end.
+The value found was 31 V/Nm. This won't be accurate, but should be the right order of magnitude.
+
 ## Connections
 
 The motor shield should be stacked on top of the K64F. The jumpers on the motor shield should be set to `PWRIN`, such that the external power supply is used.
